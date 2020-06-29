@@ -1,6 +1,8 @@
 import { MarkedOptions, Renderer } from "marked";
 import MentionReplacer from "../replacer/mention-replacer";
 import KintoneClient from "../../kintone/kintone-client";
+import hljs from 'highlight.js';
+import 'highlight.js/styles/a11y-light.css'
 
 class MarktoneRendererHelper {
   static escapeHTML(html: string): string {
@@ -19,6 +21,12 @@ class MarktoneRendererHelper {
     }
 
     return html;
+  }
+  static highlightingCode(code: string, language: string) {
+    if (!hljs.listLanguages().includes(language)) {
+      language = 'plaintext'
+    }
+    return hljs.highlight(language, code).value
   }
 }
 
@@ -56,15 +64,13 @@ class MarktoneRenderer extends Renderer {
   }
 
   code(code: string, language: string, isEscaped: boolean): string {
-    const escapedCode = isEscaped
-      ? code
-      : MarktoneRendererHelper.escapeHTML(code);
+    const escapedHighlightedCode = MarktoneRendererHelper.highlightingCode(code, language)
     const preStyle =
       "background-color: #f6f8fa; border-radius: 3px; padding: 8px 16px;";
     const codeStyle =
       "font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;"
 
-    return `<pre style="${preStyle}"><code style="${codeStyle}">${escapedCode}</code></pre>`;
+    return `<pre style="${preStyle}"><code style="${codeStyle}">${escapedHighlightedCode}</code></pre>`;
   }
 
   blockquote(quote: string): string {
