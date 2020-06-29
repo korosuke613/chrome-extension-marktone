@@ -1,6 +1,10 @@
 import { MarkedOptions, Renderer } from "marked";
 import MentionReplacer from "../replacer/mention-replacer";
 import KintoneClient from "../../kintone/kintone-client";
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
+import {style} from '../../../styles/code-style';
+
 
 class MarktoneRendererHelper {
   static escapeHTML(html: string): string {
@@ -19,6 +23,35 @@ class MarktoneRendererHelper {
     }
 
     return html;
+  }
+  static highlightingCode(code: string, language: string) {
+    if (!hljs.listLanguages().includes(language)) {
+      language = 'plaintext'
+    }
+    let afterCode = hljs.highlight(language, code).value
+    const regexReplace = /class="[\w-]+"/g;
+    const regexClass = /"[\w-]+"/
+    const found = afterCode.match(regexReplace)
+    if(found === null){
+      return afterCode
+    }
+    found.forEach(element => {
+      const _className = element.match(regexClass)
+      if(_className === null){
+        return
+      }
+
+      if(_className[0] === null){
+        return
+      }
+      const className = _className[0].replace("\"", "").replace("\"", "")
+      if(style[className] === undefined){
+        return
+      }
+      afterCode = afterCode.replace(element, `style=\"${style[className]}\"`)
+    });
+
+    return afterCode
   }
 }
 
@@ -56,13 +89,11 @@ class MarktoneRenderer extends Renderer {
   }
 
   code(code: string, language: string, isEscaped: boolean): string {
-    const escapedCode = isEscaped
-      ? code
-      : MarktoneRendererHelper.escapeHTML(code);
+    const escapedHighlightedCode = MarktoneRendererHelper.highlightingCode(code, language)
     const style =
       "background-color: #f6f8fa; border-radius: 3px; padding: 8px 16px;";
 
-    return `<pre style="${style}"><code>${escapedCode}</code></pre>`;
+    return `<pre style="${style}"><code>${escapedHighlightedCode}</code></pre>`;
   }
 
   blockquote(quote: string): string {
